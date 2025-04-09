@@ -1,24 +1,30 @@
 <?php
 require 'connection.php';
 
-// Vérifier si l'ID est présent dans l'URL
-if (!isset($_GET['id'])) {
-    header('Location: listeEtudiants.php');
-    exit();
-}
+
+if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
+    header('HTTP/1.1 400 Bad Request');
+    die("ID invalide");
+} 
 
 $id = $_GET['id'];
 
-// Récupérer les détails de l'étudiant
-$sql = "SELECT * FROM student WHERE id = ?";
-$stmt = $pdo->prepare($sql);
-$stmt->execute([$id]);
-$etudiant = $stmt->fetch(PDO::FETCH_ASSOC);
-
-// Si l'étudiant n'existe pas
-if (!$etudiant) {
-    header('Location: index.php');
-    exit();
+try {
+    $sql = "SELECT * FROM student WHERE id = :id";
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+    $stmt->execute();
+    
+    $etudiant = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    
+    if (!$etudiant) {
+        header('HTTP/1.1 404 Not Found');
+        die("Étudiant non trouvé");
+    }
+} catch (PDOException $e) {
+    header('HTTP/1.1 500 Internal Server Error');
+    die("Erreur de base de données: " . $e->getMessage());
 }
 ?>
 
